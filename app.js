@@ -8,8 +8,8 @@ const koaBody = require('koa-body')
 const logger = require('koa-logger')
 var cors = require('kcors')
 
-const index = require('./routes/index')
-const users = require('./routes/users')
+const index = require('./src/routes/index')
+const users = require('./src/routes/file')
 
 // error handler
 onerror(app)
