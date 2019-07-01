@@ -3,17 +3,36 @@ const app = new Koa()
 const views = require('koa-views')
 const json = require('koa-json')
 const onerror = require('koa-onerror')
+
 // const bodyparser = require('koa-bodyparser'
 const koaBody = require('koa-body')
 const logger = require('koa-logger')
-var cors = require('kcors')
+const cors = require('kcors')
 
-const index = require('./src/routes/index')
-const users = require('./src/routes/file')
+const qsJSON = require('./src/QueryStringJSON/index')
+const index  = require('./src/routes/index')
+const users  = require('./src/routes/student')
 
+qsJSON(app)
 // error handler
 onerror(app)
-
+app.use(async (ctx, next) => {
+  try {
+    await next()
+  } catch (err) {
+    // 系统内自定义异常
+    if (err.ercode) {
+      ctx.response.body = err
+    } else {
+      ctx.response.status = 200
+      ctx.response.body = {
+        status: 200,
+        message: err.message,
+        isSuccess: false
+      }
+    }
+  }
+})
 // middlewares
 // app.use(bodyparser({
 //   enableTypes:['json', 'form', 'text']
@@ -63,7 +82,7 @@ app.use(cors({
 
   // 该字段可选。它的值是一个布尔值，表示是否允许发送Cookie。默认情况下，Cookie不包括在CORS请求之中。
   // 当设置成允许请求携带cookie时，需要保证"Access-Control-Allow-Origin"是服务器有的域名，而不能是"*";
-  // credentials: true,
+  credentials: true,
 
 }))
 app.use(require('koa-static')(__dirname + '/public'))
