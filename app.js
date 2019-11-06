@@ -8,14 +8,26 @@ const onerror = require('koa-onerror')
 const koaBody = require('koa-body')
 const logger = require('koa-logger')
 const cors = require('kcors')
+const session = require('koa-session')
+const serve = require('koa-static');
+const path = require('path')
 
 const qsJSON = require('./src/QueryStringJSON/index')
-const index  = require('./src/routes/index')
-const users  = require('./src/routes/student')
+// 路由引入
+// const index  = require('./src/routes/index')
+// const users  = require('./src/routes/student')
+const person  = require('./src/routes/person')
+const department  = require('./src/routes/department')
+const users = require('./src/routes/users')
+const upload = require('./src/routes/upload')
+
+ // 1.主页静态网页 把静态页统一放到public中管理
+const home  = serve(path.join(__dirname)+'/public/');
 
 qsJSON(app)
 // error handler
 onerror(app)
+
 app.use(async (ctx, next) => {
   try {
     await next()
@@ -43,7 +55,8 @@ app.use(koaBody({
     maxFileSize: 200*1024*1024    // 设置上传文件大小最大限制，默认2M
   }
 }))
-
+// 注册公开文件夹
+app.use(home);
 app.use(json())
 app.use(logger())
 app.use(cors({
@@ -85,6 +98,19 @@ app.use(cors({
   credentials: true,
 
 }))
+
+app.keys = ['Unspeakable secrets']
+const CONFIG = {
+  key: 'session',
+  maxAge: 60 * 1000, // cookie的过期时间 毫秒
+  overwrite: true,
+  httpOnly: true, // true表示只有服务器端可以修改cookie
+  signed: true,
+  rolling: false, // 在每次请求时强行设置 cookie，这将重置 cookie 过期时间（默认：false）
+  renew: false
+}
+app.use(session(CONFIG, app))
+
 app.use(require('koa-static')(__dirname + '/public'))
 
 app.use(views(__dirname + '/views', {
@@ -98,8 +124,12 @@ app.use(async (ctx, next) => {
   const ms = new Date() - start
   console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
 })
-// routes
-app.use(index.routes(), index.allowedMethods())
+// routes注册
+// app.use(index.routes(), index.allowedMethods())
+app.use(upload.routes(), upload.allowedMethods())
+// app.use(users.routes(), users.allowedMethods())
+app.use(person.routes(), person.allowedMethods())
+app.use(department.routes(), department.allowedMethods())
 app.use(users.routes(), users.allowedMethods())
 
 // error-handling

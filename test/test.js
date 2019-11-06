@@ -23,7 +23,7 @@ const employeeSchema = new Schema({
 });
 
 let department = mongoose.model('department', departmentSchema);
-let employee = mongoose.model("employee", employeeSchema);
+// let employee = mongoose.model("employee", employeeSchema);
 
 
 
