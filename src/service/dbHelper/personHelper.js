@@ -4,9 +4,17 @@ require('../Models/departmentEntity')
 const Person = require('../Models/personEntity')
 const assert = require('assert')
 
+
 exports.add = async (person) => {
   console.log('新加的东西', person)
   return Person.create(person)
+}
+
+exports.find = async (query, populate = '', sort = {'createTime': -1}) => {
+  // console.log('正式查询', query)
+  let res = await Person.find(query).populate(populate).sort(sort)
+  // console.log('正式查询结果', res)
+  return res
 }
 
 exports.findOne = async (filter, populate = '') => {
@@ -14,6 +22,7 @@ exports.findOne = async (filter, populate = '') => {
   filterCopy.deleted = false
   return await Person.findOne(filterCopy).populate(populate)
 },
+
 exports.updateOne =  async (filter, person) => {
   // console.log('控制层到了', filter)
   let personOld = await Person.findOne(filter)
@@ -22,6 +31,7 @@ exports.updateOne =  async (filter, person) => {
   console.log('更新的人', res)
   return res
 },
+
 exports.del =  async (filter) => {
     // console.log('控制层到了', filter)
     let person = await Person.findOne(filter)

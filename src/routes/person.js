@@ -26,6 +26,16 @@ router.get('/', async (ctx) => {
   }
 })
 
+router.get('/all', async (ctx) => {
+  console.log('查询所有人', ctx.query)
+  try {
+    ctx.body = await personController.findAll(ctx.query)
+  } catch (e) {
+    ctx.status = 406
+    ctx.body = e.toString()
+  }
+})
+
 router.get('/:_id', async (ctx) => {
   ctx.body = await personController.findOne(ctx.params)
 })

@@ -6,6 +6,99 @@ const departmentHelper = require("../service/dbHelper/personHelper")
 const departmentController = require("./departmentController")
 const baidu  = require('../thirdparty/controller/BaiDuFaceRecognition')
 
+async function personFilterCopyUtil (param) {
+  let obj = {deleted: false}
+  if (param) {
+    if (param._id) {
+      obj._id = param._id
+    }
+    if (param.email) {
+      obj.email = param.email
+    }
+    if (param.name) {
+      obj.name = param.name
+    }
+    if ('roles' in param) {
+      obj.role = param.roles
+    }
+    if ('gender' in param) {
+      obj.gender = param.gender
+    }
+    if ('type' in param) {
+      obj.type = param.type
+    }
+    if ('subType' in param) {
+      obj.subType = param.subType
+    }
+    if ('certificateType' in param) {
+      obj.certificateType = param.certificateType
+    }
+    if (param.certificateNumber) {
+      obj.certificateNumber = param.certificateNumber
+    }
+    if (param.tel) {
+      obj.tel = param.tel
+    }
+    if (param.email) {
+      obj.email = param.email
+    }
+    if (param.position) {
+      obj.position = param.position
+    }
+    if (param.employeeNumber) {
+      obj.employeeNumber = param.employeeNumber
+    }
+    if ('entryState' in param) {
+      obj.entryState = param.entryState
+    }
+    if (param.wxOpenid) {
+      obj.wxOpenid = param.wxOpenid
+    }
+    if (param.wxPublicOpenid) {
+      obj.wxPublicOpenid = param.wxPublicOpenid
+    }
+    if (param.tpFrId) {
+      obj.tpFrId = param.tpFrId
+    }
+    if (param.watcherEmployee) {
+      obj.watcherEmployee = param.watcherEmployee
+    }
+    if ('searchContent' in param) {
+      param.type = parseInt(param.type)
+      if (param.type === 0) {
+        obj.$or = [
+          {name: {$regex: param.searchContent, $options: '$i'}},
+          {employeeNumber: {$regex: param.searchContent, $options: '$i'}},
+          {tel: {$regex: param.searchContent, $options: '$i'}}
+        ]
+        // logger.debug('员工搜索 obj.$or',obj.$or)
+      } else {
+        obj.$or = [
+          {name: {$regex: param.searchContent, $options: '$i'}},
+          {employeeNumber: {$regex: param.searchContent, $options: '$i'}},
+          {tel: {$regex: param.searchContent, $options: '$i'}}
+        ]
+        // logger.debug('访客搜索 obj.$or',obj.$or)
+      }
+    }
+    if ('receptionist' in param) {
+      obj.$or = [
+        {name: {$regex: param.receptionist, $options: '$i'}},
+      ]
+    }
+    if (param.department) {
+      obj.department = {$in: await departmentController.findIdListIncludeChildren(param.department)}
+    }
+    if (param.$or) {
+      obj.$or = param.$or
+    }
+    if (param.$and) {
+      obj.$and = param.$and
+    }
+  }
+  return obj
+}
+
 async function verifyPersonFieldDuplicated (person) {
   // console.log('判断有执行啊' , person.certificateNumber)
   // 重复性校验-证件号
@@ -58,6 +151,14 @@ async function update_verifyPersonFieldDuplicated (person) {
   }
 }
 
+exports.findAll = async (params) => {
+  console.log('到达控制层', params)
+  let filter = await personFilterCopyUtil(params)
+  console.log('到达控制层2', filter)
+  // let filter = params
+  // logger.debug('[人员] [查询]', filter)
+  return await personHelper.find(filter, 'department')
+},
 exports.findPageQuery = async (ctx) => {
   console.log( 'agagag',ctx.query.params)
   console.log( 'agagag',ctx.query.page)

@@ -1,6 +1,5 @@
-/**
- * @create by SNOW 2018.10.10
- */
+
+
 const router = require('koa-router')()
 const departmentController= require('../controller/departmentController')
 

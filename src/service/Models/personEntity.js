@@ -24,6 +24,6 @@ const personScheme = mongoose.Schema({
   deleted: {type: Boolean, default: false},       //是否已删除
 });
 
-var personEntity = mongoose.model('person', personScheme);
+var Person = mongoose.model('Person', personScheme);
 
-module.exports = personEntity;
+module.exports = Person;
