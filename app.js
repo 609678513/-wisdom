@@ -25,6 +25,8 @@ const agreedRecord = require('./src/routes/agreedRecord')
  // 1.主页静态网页 把静态页统一放到public中管理
 const home  = serve(path.join(__dirname)+'/public/');
 
+global.serverPath= __dirname;
+// console.log('app的路径', __dirname)
 qsJSON(app)
 // error handler
 onerror(app)

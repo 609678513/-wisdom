@@ -75,7 +75,7 @@ exports.search = async  (base64)  => {
 // 人脸更新 1
 exports.update =  async  (person)  => {
   await getToken ()
-  let photoPath = path.join(__dirname.substring(0,22), 'public/images/') + person.photo
+  let photoPath = path.join(global.serverPath, '/public/images/') + person.photo
   let bitmap = fs.readFileSync(photoPath);
   let base64str1 = new Buffer(bitmap).toString('base64');
   let options = {
@@ -104,7 +104,7 @@ exports.delete =  async  (person)  => {
 exports.add =  async  (person)  => {
   // console.log('到人脸注册了')
   await getToken ()
-  let photoPath = path.join(__dirname.substring(0,22), 'public/images/') + person.photo
+  let photoPath = path.join(global.serverPath, '/public/images/') + person.photo
   let bitmap = fs.readFileSync(photoPath);
   let base64str1 = new Buffer(bitmap).toString('base64');
   let options = {

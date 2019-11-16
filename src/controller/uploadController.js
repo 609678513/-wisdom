@@ -8,7 +8,9 @@ exports.uploadPhoto = async (file) => {
   // 创建可读流
   const reader = fs.createReadStream(file.path);
   let nowFileName = Date.now() + '.' +  file.name.split('.').pop();
-  let filePath = path.join(__dirname.substring(0,22), 'public/images/') + nowFileName
+  // console.log('路径啊啊啊', global.serverPath)
+  // console.log('路径啊啊啊222', __dirname.substring(0,22))
+  let filePath = path.join(global.serverPath, '/public/images/') + nowFileName
   // 创建可写流
   const upStream = fs.createWriteStream(filePath)
   // 可读流通过管道写入可写流
