@@ -3,15 +3,7 @@ const personController = require('../controller/personController')
 
 router.prefix('/person')
 
-router.post('/', async (ctx) => {
-  try {
-    ctx.body = await personController.add(ctx.request.body)
-  } catch (e) {
-    ctx.status = 406
-    // console.log('我是添加错误', e.message)
-    ctx.body = e.message
-  }
-})
+
 
 router.get('/', async (ctx) => {
   // console.log('分页路由')
@@ -24,6 +16,11 @@ router.get('/', async (ctx) => {
     ctx.status = 406
     ctx.body = e.toString()
   }
+})
+
+router.get('/phone', async (ctx) => {
+  console.log('电话查询员工', ctx.query)
+  ctx.body = await personController.findOne(ctx.query)
 })
 
 router.get('/all', async (ctx) => {
@@ -44,8 +41,19 @@ router.put('/', async (ctx) => {
   ctx.body = await personController.update(ctx.request.body)
 })
 
+router.post('/', async (ctx) => {
+  try {
+    ctx.body = await personController.add(ctx.request.body)
+  } catch (e) {
+    ctx.status = 406
+    // console.log('我是添加错误', e.message)
+    ctx.body = e.message
+  }
+})
+
 router.delete('/:id', async (ctx) => {
   // console.log('删除路由', ctx.params)
   ctx.body = await personController.del(ctx.params.id)
 })
+
 module.exports = router

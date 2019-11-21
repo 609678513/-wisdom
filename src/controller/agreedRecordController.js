@@ -76,22 +76,26 @@ exports.update = async (body) => {
       // console.log('邀约记录1', docOld)
       doc = await agreedRecordHelper.findOneAndUpdate(filter, body, {new: false})
       // console.log('邀约记录2', doc)
-      doc.agreementDate.agreementTime = moment(doc.agreementDate.start).format('YYYY-MM-DD ') + enums.AGREEMENT_TIME[doc.agreementDate.type]
+      // doc.agreementDate.agreementTime = moment(doc.agreementDate.start).format('YYYY-MM-DD ') + enums.AGREEMENT_TIME[doc.agreementDate.type]
       let invitationRecord = await agreedRecordHelper.findOne({_id: doc._id }, 'sponsor receptionist')
-      if (body.status === doc.status) {
+      console.log('更改前状态', docOld.status)
+      console.log('更改该后状态', doc.status)
+      if (docOld.status === invitationRecord.status) {
         // 未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变
         if(doc.agreementDate.time !== body.agreementDate.time){
+          console.log('未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变')
           notification.timeChange(invitationRecord)
         }
         // 接待人发生改变 通知接待人
         if(body.receptionist && doc.receptionist && (doc.receptionist !== body.receptionist)){
+          console.log(' 接待人发生改变 通知接待人')
           notification.reception(invitationRecord)
         }
         // 前后状态一致，不再发送消息
         return doc
       }
       // 未到访 邀约记录添加到访客信息中
-      if(doc.status === 1){
+      if(invitationRecord.status === 1){
         let person ={
           type: 1,             // 人员类型
           name: doc.name,             // 姓名
@@ -103,7 +107,7 @@ exports.update = async (body) => {
           remark: doc.remark,           // 备注
           // updateTime: moment().format('YYYY-MM-DD '),// 更新时间
         }
-        if (doc.certificateNumber) {
+        if (invitationRecord.certificateNumber) {
           person.certificateType = 0  // 证件类型
           person.certificateNumber = doc.certificateNumber// 证件号码
         }
@@ -113,13 +117,13 @@ exports.update = async (body) => {
       }
 
       // 已到访时 给接待人员发送短信
-      if(doc.status === 3){
+      if(invitationRecord.status === 3){
         console.log('给接待人发送短信')
         notification.visitInform(invitationRecord)
       }
 
       // 已失效时 给访客和接待人发送短信
-      if(doc.status === 4){
+      if(invitationRecord.status === 4){
         console.log('给接待人发送短信')
         notification.cancellation(invitationRecord)
       }

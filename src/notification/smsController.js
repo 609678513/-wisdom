@@ -19,7 +19,7 @@ exports.completeInformation = async (invitationRecord) => {
   message.add_var('tel', invitationRecord.sponsor.tel);
   message.add_var('path', url);
 
-  // message.xsend()
+  message.xsend()
   console.log('补全信息短信结束')
 }
 
@@ -35,7 +35,7 @@ exports.reception = async (invitationRecord) => {
   message.add_var('name', invitationRecord.name);
   message.add_var('remark', invitationRecord.receptionRemark);
 
-  // message.xsend()
+  message.xsend()
   console.log('接待人通知短信结束')
 }
 
@@ -58,8 +58,8 @@ exports.cancellation = async (invitationRecord) => {
   receptionMessage.add_var('time', invitationRecord.agreementDate.time);
   receptionMessage.add_var('name', invitationRecord.receptionist.name);
 
-  // visitorMessage.xsend()
-  // receptionMessage.xsend()
+  visitorMessage.xsend()
+  receptionMessage.xsend()
   console.log('取消通知短信结束')
 }
 
@@ -84,8 +84,8 @@ exports.timeChange = async (invitationRecord) => {
   receptionMessage.add_var('time', invitationRecord.agreementDate.time);
 
 
-  // visitorMessage.xsend()
-  // receptionMessage.xsend()
+  visitorMessage.xsend()
+  receptionMessage.xsend()
   console.log('拜访时间改变短信结束')
 }
 
@@ -101,7 +101,7 @@ exports.visitInform = async (invitationRecord) => {
   receptionMessage.add_var('name1', invitationRecord.name);
   receptionMessage.add_var('tel', invitationRecord.tel);
 
-  // receptionMessage.xsend()
+  receptionMessage.xsend()
   console.log('已到访通知短信结束')
 }
 
@@ -124,8 +124,8 @@ exports.cancellation = async (invitationRecord) => {
   receptionMessage.add_var('time', invitationRecord.agreementDate.time);
   receptionMessage.add_var('name', invitationRecord.receptionist.name);
 
-  // visitorMessage.xsend()
-  // receptionMessage.xsend()
+  visitorMessage.xsend()
+  receptionMessage.xsend()
   console.log('失效通知短信结束')
 }
 
