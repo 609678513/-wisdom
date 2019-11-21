@@ -9,11 +9,16 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@alicloud/mns": "^1.0.0",
+    "@alicloud/pop-core": "^1.7.7",
+    "@alicloud/sms-sdk": "^1.1.6",
     "@koa/cors": "^2.2.3",
     "axios": "^0.19.0",
     "debug": "^2.6.3",
+    "es-to-primitive": "^1.2.1",
     "exceljs": "^1.12.1",
     "fs": "0.0.1-security",
+    "has-symbols": "^1.0.1",
     "kcors": "^2.2.2",
     "koa": "^2.2.0",
     "koa-body": "^4.1.0",
@@ -29,6 +34,7 @@
     "merge-descriptors": "^1.0.1",
     "mongoose": "^5.5.14",
     "node-xlsx": "^0.15.0",
+    "object-inspect": "^1.7.0",
     "pug": "^2.0.0-rc.1"
   },
   "devDependencies": {

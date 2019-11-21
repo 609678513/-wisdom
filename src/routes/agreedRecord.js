@@ -21,7 +21,7 @@ router.get('/:_id', async (ctx) => {
 
 // 添加单条邀约接口
 router.post('/invitedRecord', async (ctx) => { // 添加单条邀约接口
-  console.log('这是什么套路', ctx.request.body)
+  console.log('添加单条邀约', ctx.request.body)
   ctx.body = await agreedRecordController.addInvitationRecord(ctx.request.body)
 })
 
@@ -36,25 +36,10 @@ router.put('/cancleInvite', async (ctx) => {
   ctx.body = await agreedRecordController.cancleInvite(ctx.request.body)
 })
 
-// router.put('/withOutPic/:_id', async (ctx) => { // 邀约微信小程序无图片接口
-//   ctx.body = await agreedRecordController.update(ctx.params, ctx.request.body)
-// })
 
 router.delete('/:_id', async (ctx) => { // 假删除接口
   ctx.body = await agreedRecordController.del(ctx.params)
 })
-
-// 邀约相关接口
-// router.post('/invitationRecord', uploadUtil.FileRequestParser, async (ctx) => { // 添加单条邀约接口
-//   let body = ctx.request.body
-//   if (ctx.request.files.photo) {
-//     let uploadResult = await uploadUtil.uploadFormData(ctx.request)
-//     if (uploadResult && uploadResult.photo) {
-//       body.photo = uploadResult.photo
-//     }
-//   }
-//   ctx.body = await agreedRecordController.addInvitationRecord(body)
-// })
 
 // 邀约微信小程序无图片接口
 router.post('/invitationRecordWithOutPic', async (ctx) => { // 添加单条邀约接口
@@ -71,18 +56,6 @@ router.get('/invitationRecords', async (ctx) => { // 邀约查询接口
   ctx.query['recordType'] = 1
   ctx.body = await agreedRecordController.findRecords(ctx.query)
 })
-
-// 预约相关接口
-// router.post('/reservationRecord', uploadUtil.FileRequestParser, async (ctx) => { // 添加预约接口
-//   let body = ctx.request.body
-//   if (ctx.request.files.photo) {
-//     let uploadResult = await uploadUtil.uploadFormData(ctx.request)
-//     if (uploadResult && uploadResult.photo) {
-//       body.photo = uploadResult.photo
-//     }
-//   }
-//   ctx.body = await agreedRecordController.addReservationRecord(body)
-// })
 
 // 添加预约接口无图片
 router.post('/reservationRecordWithOutPic', async (ctx) => { // 添加预约接口
@@ -131,15 +104,5 @@ router.put('/saveReceptionist', async (ctx) => {
   ctx.body = await agreedRecordController.saveReceptionist(ctx.request.body)
 })
 
-// router.put('/:_id', uploadUtil.FileRequestParser, async (ctx) => { // 修改接口
-//   let body = ctx.request.body
-//   if (ctx.request.files.photo) {
-//     let uploadResult = await uploadUtil.uploadFormData(ctx.request)
-//     if (uploadResult && uploadResult.photo) {
-//       body.photo = uploadResult.photo
-//     }
-//   }
-//   ctx.body = await agreedRecordController.update(ctx.params, body)
-// })
 
 module.exports = router
