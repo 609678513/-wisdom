@@ -138,6 +138,7 @@ app.use(agreedRecord.routes(), agreedRecord.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
+  logger.error(err);
   console.error('server error', err, ctx)
 });
 module.exports = app

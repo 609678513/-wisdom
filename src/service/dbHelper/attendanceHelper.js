@@ -1,12 +1,9 @@
-
 require('../utils/dbConnection');
-require('../Models/agreedRecordEntity');
-
-const AgreedRecord = require('../Models/agreedRecordEntity')
-
+require('../Models/attendanceEntity');
+const attendanceEntity = require('../Models/attendanceEntity')
 
 exports.find = async (query, populate = '', sort = {'createTime': -1}) => {
-  return await AgreedRecord.find(query).populate(populate).sort(sort)
+  return await attendanceEntity.find(query).populate(populate).sort(sort)
 }
 
 exports.findOne = async (filter, populate = '') => {
@@ -20,9 +17,9 @@ exports.findOneAndUpdate = async (filter, body, options = {new: true}) => {
   return AgreedRecord.findOneAndUpdate(filter, body, options)
 }
 
-exports.add = async (agreedRecord) => {
+exports.add = async (attendance) => {
   // console.log('新加的东西', agreedRecord)
-  return AgreedRecord.create(agreedRecord)
+  return attendanceEntity.create(attendance)
 }
 
 exports.pageQuery2 = async (filter, pagination = {page: 0, size: 10, sort: '_id'}, populate = '') => {

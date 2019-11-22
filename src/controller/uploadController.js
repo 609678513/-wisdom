@@ -1,7 +1,106 @@
 const path = require('path')
 const fs = require('fs')
 const personHelper = require("../service/dbHelper/personHelper")
+const agreedRecordHelper = require("../service/dbHelper/agreedRecordHelper")
+const attendanceHelper = require("../service/dbHelper/attendanceHelper")
 const baidu  = require('../thirdparty/controller/BaiDuFaceRecognition')
+const moment = require('moment')
+const lodash = require('lodash')
+
+
+// 时间段判断
+async function  timeBetweenDayFormat (timeS, timeE) {
+  let start = new Date(moment(timeS))
+  let end = new Date(moment(timeE))
+  let now = new Date(moment())
+  return (now - start.getTime() > 0) && (end.getTime() - now > 0)
+}
+
+function  timeBetweenDayFormatWork () {
+  let start = new Date(moment().date(0).hours(9).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  console.log('工作开始时间', moment().date(0).hours(9).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  let end = new Date(moment().date(0).hours(18).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  console.log('工作结束时间', moment().date(0).hours(18).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  let now = new Date(moment())
+  return (now - start.getTime() > 0) && (end.getTime() - now > 0)
+}
+
+// 访客识别操作
+async function visitorRecognition (user){
+  let filter ={
+    _id: user.user_id
+  }
+  let business ={
+    type : 3
+  }
+  let invitationRecord = await agreedRecordHelper.findOne(filter)
+  console.log('查找到的邀约记录', invitationRecord)
+  business.isOK = await timeBetweenDayFormat(invitationRecord.agreementDate.start, invitationRecord.agreementDate.end)
+  // 写入开门记录
+  if(business.isOK){
+    console.log('访客写入开门记录')
+  }
+ return { business:business, invitationRecord: invitationRecord }
+}
+
+// 员工识别操作
+async function employeeRecognition (user){
+  let business ={
+    employeeName: user.user_info, // 名字
+    type : 0,   // 人员类型 0:员工  3：访客
+    isOK : true, // 是否开门
+    checkingIn: 1, //  1：签到  0；迟到
+    employeeDeleted: 1  // 人员是否存在 1：存在  0不存在
+  }
+  let employee = await personHelper.findOne({_id:user.user_id})
+  // 员工不存在
+  if(!employee){
+    business.employeeDeleted = 0
+    return business
+  }
+  // 查询今天是否考勤，没有则开始考勤
+  let date = [
+    moment().hours(0).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'),
+    moment().hours(24).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss')
+  ]
+  let attendanceFilter ={
+    person: user.user_id,
+    createTime: {$gte: date[0], $lt: date[1]},
+  }
+  // console.log('查询考勤记录开始', attendanceFilter)
+  let attendance = await attendanceHelper.find(attendanceFilter, 'person')
+  // console.log('查询考勤记录', attendance)
+  // 没有考勤记录添加考勤记录
+  if(!attendance){
+    // console.log('添加考勤记录')
+    let body ={
+      firstEntryTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+      person: user.user_id,
+      createTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+    }
+    body.firstType = await timeBetweenDayFormatWork() ? 1 : 0
+    business.checkingIn = body.firstType //设置签到类型 返回给提示
+    let res = await attendanceHelper.add(body)
+    console.log('添加考勤记录成功', res)
+    }
+  console.log('员工写入开门记录')
+  return business
+}
+
+// 人脸匹配度最大计算
+async function cuccessfulCalculation(users){
+  let user
+  if(users.length > 1){
+    user = users.reduce((a, b) => {
+      if (a.score >= b.score) return a
+      if (a.score < b.score) return b
+    })
+    return user
+  }else {
+    user = users[0]
+    return user
+  }
+}
 
 // 照片上传
 exports.uploadPhoto = async (file) => {
@@ -24,27 +123,68 @@ exports.uploadPhoto = async (file) => {
 
 // 开门记录
 exports.openRecord = async (base64) => {
+  let response ={
+    business: {},
+    baidu: {}
+  }
+  let result = await baidu.search(base64)
+  let res = result.data
+  // console.log('人脸搜索结果', res)
+  if(res.error_code === 0){
+    // 选出相似度最高的人
+    let user = await cuccessfulCalculation(res.result.user_list)
+    console.log('计算识别结果', user)
+    // 邀约表查询
+    if(user.group_id === '3'){
+      let visitor =  await visitorRecognition(user)
+      response.person = lodash.cloneDeep(visitor.invitationRecord)
+      response.business = lodash.cloneDeep(visitor.business)
+    }
+    // 人员表查询
+    if(user.group_id === '0'){
+      console.log('人员表查询开始')
+      response.business = await employeeRecognition (user)
+    }
+  }
+  response.baidu = res
+  console.log('识别结果', response)
+  return response
+}
+
+// 离开记录
+exports.outRecord = async (base64) => {
+  let response ={
+    person : {},
+    business: {},
+    baidu: {}
+  }
   let result = await baidu.search(base64)
   let res = result.data
   console.log('人脸搜索结果', res)
-  let person = {}
   if(res.error_code === 0){
-    let user
-    if(res.result.user_list.length > 1){
-        user = await res.result.user_list.reduce((a, b) => {
-        if (a.score >= b.score) return a
-        if (a.score < b.score) return b
-      })
-    }else {
-      user = res.result.user_list[0]
+    // 选出相似度最高的人
+    let user = await cuccessfulCalculation(res.result.user_list)
+    // 邀约表查询
+    if(user.group_id === 3){
+      // 1、查询该条邀约记录
+      // 2、设置签离时间。修改邀约状态
+      // 3、更新邀约记录
     }
-    let filter ={
-      type: user.group_id,
-      _id: user.user_id
+    // 人员表查询
+    if(user.group_id === 0){
+      // 2：签退  3：早退
+      // 1、查询当天考勤记录
+      // 2、没有则创建考勤记录
+      //    2.1、判断签退类型
+      //    2.2、设置设置签退时间，签退类型
+      //    2.3、添加考情记录
+      // 3、有则更新考勤记录
+      //    3.1 判断签退类型
+      //    3.2、设置设置签退时间，签退类型
+      //    2.3、更新考情记录
     }
-    person = await personHelper.findOne(filter, 'department')
-    console.log('查找到的用户', person)
-    //---------------- 在此处写上开门记录 ------------------------------
   }
-  return { person: person, baidu: res}
+  response.baidu = res
+  console.log('识别结果', response)
+  return response
 }

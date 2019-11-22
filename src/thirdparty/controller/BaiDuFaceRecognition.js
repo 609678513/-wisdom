@@ -62,7 +62,7 @@ exports.search = async  (base64)  => {
   let options = {
     image: base64, // 必选
     image_type: 'BASE64',// 必选
-    group_id_list: '0', // 指定用户组查找，必选
+    group_id_list: '0,3', // 指定用户组查找，必选
     // user_id: 'user2', // 指定用户id 查找 非必选
     // user_info: 'daiym3',// 用户描述 非必选
     liveness_control: 'NORMAL',// 活体检测控制级别
@@ -111,7 +111,7 @@ exports.add =  async  (person)  => {
     image: base64str1, // 必选
     image_type: 'BASE64',// 必选
     group_id: person.type, //用户组ID，可以分人员类型 员工和访客来存储 必选
-    user_id: person._id, //用户id 对应人员表的 _id  必选
+    user_id: person._id, //用户id 对应人员表的 _id  必选，邀约记录对应邀约ID
     user_info: person.name,// 用户描述 非必选
     liveness_control: 'NORMAL',// 活体检测控制级别
     quality_control: 'LOW' // 图片质量检测级别

@@ -182,10 +182,11 @@ exports.add = async (person) => {
   } else {
     await verifyPersonFieldDuplicated(person)
     let resPerson =  await personHelper.add(person)
-    if(resPerson.photo){
-      let res = await baidu.add(resPerson)
-      console.log('人脸注册结果', res.data)
-    }
+    return resPerson
+    // if(resPerson.photo){
+    //   let res = await baidu.add(resPerson)
+    //   console.log('人脸注册结果', res.data)
+    // }
   }
 }
 

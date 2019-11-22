@@ -3,9 +3,12 @@ const personController = require('../controller/personController')
 const personHelper = require("../service/dbHelper/personHelper")
 const agreedRecordHelper = require("../service/dbHelper/agreedRecordHelper")
 const notification = require("../notification/smsController")
+const baidu  = require('../thirdparty/controller/BaiDuFaceRecognition')
+
 const enums = require('../enums')
 const _ = require('lodash')
 const moment = require('moment')
+const lodash = require('lodash')
 
 
 // 邀约查询
@@ -65,8 +68,8 @@ exports.findOne = async (filter) => {
 },
 
 exports.update = async (body) => {
-    let docOld = ''
-    let doc = ''
+    let docOld = '' // 修改前的邀约
+    let doc = '' // 修改的邀约 相当于修改前的
     let filter = {
     deleted: body.deleted,
       _id: body._id
@@ -75,59 +78,67 @@ exports.update = async (body) => {
       docOld = await agreedRecordHelper.findOne(filter)
       // console.log('邀约记录1', docOld)
       doc = await agreedRecordHelper.findOneAndUpdate(filter, body, {new: false})
-      // console.log('邀约记录2', doc)
-      // doc.agreementDate.agreementTime = moment(doc.agreementDate.start).format('YYYY-MM-DD ') + enums.AGREEMENT_TIME[doc.agreementDate.type]
-      let invitationRecord = await agreedRecordHelper.findOne({_id: doc._id }, 'sponsor receptionist')
-      console.log('更改前状态', docOld.status)
-      console.log('更改该后状态', doc.status)
-      if (docOld.status === invitationRecord.status) {
-        // 未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变
-        if(doc.agreementDate.time !== body.agreementDate.time){
-          console.log('未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变')
-          notification.timeChange(invitationRecord)
+      if(doc){
+        let invitationRecord = await agreedRecordHelper.findOne({_id: doc._id }, 'sponsor receptionist')  // 关联查询修改后的邀约
+        // 最新的查询 照片存在且与上次不同 注册进入人脸库
+        if (invitationRecord.photo && (docOld.photo !== invitationRecord.photo)) {
+          let record = lodash.cloneDeep(invitationRecord)
+          record.type = 3
+          let res = await baidu.add(record)
+          console.log('照片更新注册人脸库结果', res.data.error_msg)
         }
-        // 接待人发生改变 通知接待人
-        if(body.receptionist && doc.receptionist && (doc.receptionist !== body.receptionist)){
-          console.log(' 接待人发生改变 通知接待人')
-          notification.reception(invitationRecord)
+        // console.log('更改该后状态', doc.status)
+        if (docOld.status === invitationRecord.status) {
+          // 未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变
+          if(doc.agreementDate.time !== body.agreementDate.time){
+            console.log('未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变')
+            notification.timeChange(invitationRecord)
+          }
+          // 接待人发生改变 通知接待人
+          if(invitationRecord.receptionist &&(docOld.receptionist + '' !== invitationRecord.receptionist._id + '')){
+            console.log(' 接待人发生改变 通知接待人',doc.receptionist, body.receptionist)
+            notification.reception(invitationRecord)
+          }
+          // 前后状态一致，不再发送消息
+          return doc
         }
-        // 前后状态一致，不再发送消息
-        return doc
-      }
-      // 未到访 邀约记录添加到访客信息中
-      if(invitationRecord.status === 1){
-        let person ={
-          type: 1,             // 人员类型
-          name: doc.name,             // 姓名
-          gender: 2,           // 性别
-          tel: doc.tel,              // 联系电话
-          photo: doc.photo,            // 识别照片
-          company: doc.company,          // 公司
-          position: doc.position,         // 职位
-          remark: doc.remark,           // 备注
-          // updateTime: moment().format('YYYY-MM-DD '),// 更新时间
+        // 未到访 邀约记录添加到访客信息中
+        if(invitationRecord.status === 1){
+          let person ={
+            type: 1,             // 人员类型
+            name: invitationRecord.name,             // 姓名
+            gender: 2,           // 性别
+            tel: invitationRecord.tel,              // 联系电话
+            photo: invitationRecord.photo,            // 识别照片
+            company: invitationRecord.company,          // 公司
+            position: invitationRecord.position,         // 职位
+            remark: invitationRecord.remark,           // 备注
+            // updateTime: moment().format('YYYY-MM-DD '),// 更新时间
+          }
+          if (invitationRecord.certificateNumber) {
+            person.certificateType = 0  // 证件类型
+            person.certificateNumber = invitationRecord.certificateNumber// 证件号码
+          }
+          // 注册人脸 并进入访客信息
+          console.log('邀约记录添加到访客信息中')
+          personController.add(person)
         }
-        if (invitationRecord.certificateNumber) {
-          person.certificateType = 0  // 证件类型
-          person.certificateNumber = doc.certificateNumber// 证件号码
-        }
-        // 注册人脸 并进入访客信息
-        console.log('邀约记录注册人脸')
-        personController.add(person)
-      }
 
-      // 已到访时 给接待人员发送短信
-      if(invitationRecord.status === 3){
-        console.log('给接待人发送短信')
-        notification.visitInform(invitationRecord)
-      }
+        // 已到访时 给接待人员发送短信
+        if(invitationRecord.status === 3){
+          console.log('给接待人发送短信')
+          notification.visitInform(invitationRecord)
+        }
 
-      // 已失效时 给访客和接待人发送短信
-      if(invitationRecord.status === 4){
-        console.log('给接待人发送短信')
-        notification.cancellation(invitationRecord)
-      }
+        // 已失效时 给访客和接待人发送短信
+        if(invitationRecord.status === 4){
+          console.log('给接待人发送短信')
+          notification.cancellation(invitationRecord)
+        }
 
+      }else {
+        return  '没有该条邀约记录！请返回列表页面'
+      }
     } catch (err) {
       if (doc && docOld) {
         // redis 出错，回滚，否则数据库出错
@@ -155,7 +166,7 @@ exports.cancleInvite = async (body) => {
     doc = await agreedRecordHelper.findOneAndUpdate(filter, docOld, {new: false})
     // console.log('取消更新成功', doc)
     let invitationRecord = await agreedRecordHelper.findOne({_id: doc._id }, 'sponsor receptionist')
-    if (body.status === doc.status) {
+    if (doc.status === invitationRecord.status) {
       // 前后状态一致，不再发送消息
       return doc
     }
