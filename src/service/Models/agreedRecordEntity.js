@@ -46,7 +46,7 @@ const agreedRecordSchema = mongoose.Schema({
   receptionRemark: { // 接待需求
     type: String
   },
-  type: Number,
+  // type: Number,
   // reviewer: { // vip邀约审核人
   //   type: mongoose.Schema.ObjectId,
   //   ref: 'Person'
@@ -59,7 +59,10 @@ const agreedRecordSchema = mongoose.Schema({
   company: String, // 公司
   position: String, // 职位
   photo: String, // 照片
-  closeReason: { // 关闭原因
+  closeReason: { // 取消原因
+    type: String
+  },
+  closeTime: { // 取消时间
     type: String
   },
   createTime: { // 创建时间
@@ -68,25 +71,22 @@ const agreedRecordSchema = mongoose.Schema({
   updateTime: { // 更新时间
     type: String
   },
-  closeTime: { // 关闭时间
-    type: String
-  },
-  invalidTime: { // 失效时间
-    type: String
+  // invalidTime: { // 失效时间
+  //   type: String
+  // },
+  endTime: {
+    type: String // 离开时间
   },
   leaveRemark: { // 离开备注
     type: String
   },
-  endTime: {
-    type: String // 结束时间
-  },
-  blacklisted: {
-    type: Boolean,
-    default: false
-  },
   arrivalTime: { // 抵达时间
     type: String
   }
+  // blacklisted: {
+  //   type: Boolean,
+  //   default: false
+  // },
 })
 
 var AgreedRecord = mongoose.model('agreedRecords', agreedRecordSchema)

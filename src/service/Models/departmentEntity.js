@@ -7,7 +7,7 @@ const departmentSchema = mongoose.Schema({
   parent: {
     type: Schema.Types.ObjectId, ref: 'Department'
   },                  // 上级部门
-  level: Number,       // 等级
+  // level: Number,       // 等级
   sort: Number,       // 排序
   deleted: {
     type: Boolean,

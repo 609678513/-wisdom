@@ -17,6 +17,7 @@ exports.findOne = async (filter, populate = '') => {
 
 exports.findOneAndUpdate = async (filter, body, options = {new: true}) => {
   // console.log('这是我们的filter', filter)
+  filter.deleted = false
   return AgreedRecord.findOneAndUpdate(filter, body, options)
 }
 

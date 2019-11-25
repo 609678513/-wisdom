@@ -16,7 +16,7 @@ const personScheme = mongoose.Schema({
   employeeNumber: String,   // 工号
   // employeeFactory: {type: Schema.Types.ObjectId, ref: 'Area'},   // 厂区
   entryDate: Date,          // 入职时间
-  birthday: Date,           // 出生日期
+  birthday: Date,           // 出生日期 
   address: String,          // 住址
   remark: String,           // 备注
   updateUser: String,       // 更新人

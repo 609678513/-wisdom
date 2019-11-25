@@ -17,45 +17,61 @@ async function  timeBetweenDayFormat (timeS, timeE) {
 }
 
 function  timeBetweenDayFormatWork () {
-  let start = new Date(moment().date(0).hours(9).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
-  console.log('工作开始时间', moment().date(0).hours(9).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
-  let end = new Date(moment().date(0).hours(18).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
-  console.log('工作结束时间', moment().date(0).hours(18).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  let start = new Date(moment().hours(9).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
+  let end = new Date(moment().hours(18).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'))
   let now = new Date(moment())
   return (now - start.getTime() > 0) && (end.getTime() - now > 0)
 }
 
 // 访客识别操作
 async function visitorRecognition (user){
-  let filter ={
-    _id: user.user_id
-  }
   let business ={
-    type : 3
+    personName: user.user_info, // 名字
+    type : 3,   // 人员类型 0:员工  3：访客
+    isOK : false, // 是否开门
+    personDeleted: 1  // 人员是否存在 1：存在  0不存在
   }
-  let invitationRecord = await agreedRecordHelper.findOne(filter)
+  let invitationRecord = await agreedRecordHelper.findOne({_id: user.user_id})
   console.log('查找到的邀约记录', invitationRecord)
+  if(!invitationRecord){
+    business.personDeleted = 0
+    return business
+  }
   business.isOK = await timeBetweenDayFormat(invitationRecord.agreementDate.start, invitationRecord.agreementDate.end)
   // 写入开门记录
   if(business.isOK){
+    let filter ={
+      _id: invitationRecord._id
+    }
+    let body = lodash.cloneDeep(invitationRecord)
+    body.arrivalTime = moment().format('YYYY-MM-DD HH:mm:ss')
+    body.status = 3
+    let res = await agreedRecordHelper.findOneAndUpdate(filter, body)
+    console.log('访客到访时间和状态更新',res)
+    if(res){
+      console.log('访客到访时间和状态更新成功')
+    }else {
+      console.log('访客到访时间和状态更新失败')
+    }
+    // 访客写入开门记录
     console.log('访客写入开门记录')
   }
- return { business:business, invitationRecord: invitationRecord }
+ return business
 }
 
 // 员工识别操作
 async function employeeRecognition (user){
   let business ={
-    employeeName: user.user_info, // 名字
+    personName: user.user_info, // 名字
     type : 0,   // 人员类型 0:员工  3：访客
     isOK : true, // 是否开门
-    checkingIn: 1, //  1：签到  0；迟到
-    employeeDeleted: 1  // 人员是否存在 1：存在  0不存在
+    checkingIn: 1, // 2:已经签到  1：正常签到  0；迟到
+    personDeleted: 1  // 人员是否存在 1：存在  0不存在
   }
   let employee = await personHelper.findOne({_id:user.user_id})
   // 员工不存在
   if(!employee){
-    business.employeeDeleted = 0
+    business.personDeleted = 0
     return business
   }
   // 查询今天是否考勤，没有则开始考勤
@@ -69,9 +85,13 @@ async function employeeRecognition (user){
   }
   // console.log('查询考勤记录开始', attendanceFilter)
   let attendance = await attendanceHelper.find(attendanceFilter, 'person')
-  // console.log('查询考勤记录', attendance)
+  console.log('查询考勤记录', attendance)
+  // 存在则正常开门
+  if(attendance.length > 0){
+    business.checkingIn = 2
+  }
   // 没有考勤记录添加考勤记录
-  if(!attendance){
+  if(attendance.length === 0){
     // console.log('添加考勤记录')
     let body ={
       firstEntryTime: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -104,6 +124,7 @@ async function cuccessfulCalculation(users){
 
 // 照片上传
 exports.uploadPhoto = async (file) => {
+  // console.log('路径啊', file)
   // 创建可读流
   const reader = fs.createReadStream(file.path);
   let nowFileName = Date.now() + '.' +  file.name.split('.').pop();
@@ -136,13 +157,11 @@ exports.openRecord = async (base64) => {
     console.log('计算识别结果', user)
     // 邀约表查询
     if(user.group_id === '3'){
-      let visitor =  await visitorRecognition(user)
-      response.person = lodash.cloneDeep(visitor.invitationRecord)
-      response.business = lodash.cloneDeep(visitor.business)
+      response.business =  await visitorRecognition(user)
     }
     // 人员表查询
     if(user.group_id === '0'){
-      console.log('人员表查询开始')
+      // console.log('人员表查询开始')
       response.business = await employeeRecognition (user)
     }
   }

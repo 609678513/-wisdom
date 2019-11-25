@@ -8,13 +8,6 @@ axios.defaults.timeout = 100000
 axios.defaults.withCredentials = true
 
 axios.defaults.headers['Content-Type'] = 'application/json'
-// axios.defaults.headers['Access-Control-Allow-Origin'] = '*'
-// axios.defaults.headers['Cache-Control'] = 'no-cache,no-store,must-revalidate,max-age=-1,private'
-// axios.defaults.fileUploadUrl = localStorage.getItem('fileUploadUrl')
-// axios.defaults.fileLoadUrl = localStorage.getItem('fileLoadUrl')
-//
-// axios.defaults.headers.common.token = localStorage.getItem('token')
-
 
  exports.axiosGet= async (url, params = {}) => {
     return axios.get(url, {params: params}).then(response => {
