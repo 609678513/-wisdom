@@ -11,6 +11,81 @@ const moment = require('moment')
 const lodash = require('lodash')
 
 
+
+// 添加邀约记录
+async function addInvitationRecord(body) {
+  let sponsor = await personHelper.findOne({_id: body.sponsor})
+  if (sponsor && sponsor.tel === body.tel) {
+    throw new Error('无法邀约自己')
+  }
+  let employees = await personHelper.findOne({tel: body.tel,type: 0})
+  if (employees) {
+    throw new Error('不能邀请本公司员工')
+  }
+  // 判断是否存在访客信息
+  let recipient = await personHelper.findOne({tel: body.tel,type: 1})
+  let agreedRecord = lodash.cloneDeep(body)
+  if (recipient) {
+    console.log('访客存在直接赋值', recipient._id)
+    agreedRecord.recipient = recipient._id
+  }else {
+    let res = await addVisitorInformation(agreedRecord)
+    console.log('访客不存在添加人员信息', res)
+    agreedRecord.recipient = res._id
+  }
+  let res = await agreedRecordHelper.add(agreedRecord)
+  // console.log('控制添加邀约记录', res)
+  let invitationRecord = await agreedRecordHelper.findOne({_id:res._id }, 'sponsor receptionist')
+  // console.log('关联查询', invitationRecord)
+  if(invitationRecord){
+    // console.log('发送补全信息')
+    notification.completeInformation(invitationRecord)
+    if(invitationRecord.receptionist){
+      // console.log('接待人通知')
+      notification.reception(invitationRecord)
+    }
+  }else {
+    throw new Error('短信发送失败')
+  }
+  return res
+}
+// 添加访客信息
+async function addVisitorInformation(invitationRecord) {
+  let person ={
+    type: 1,             // 人员类型
+    certificateType: 0,  // 证件类型
+    gender: 2,           // 性别
+    name: invitationRecord.name,               // 姓名
+    tel: invitationRecord.tel,                 // 联系电话
+    updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),// 更新时间
+  }
+  person.photo = invitationRecord.photo? invitationRecord.photo : '' // 识别照片
+  person.company = invitationRecord.company? invitationRecord.company : '' // 公司
+  person.position = invitationRecord.position? invitationRecord.position : ''  // 职位
+  person.remark = invitationRecord.remark? invitationRecord.remark : '' // 备注
+  // 注册人脸 并进入访客信息
+  let res = await personController.add(person)
+  console.log('邀约记录添加到访客信息成功', res)
+  return res
+}
+// 更新访客信息
+async function updateVisitorInformation(invitationRecord) {
+  let visitor = await personController.findOne({_id:invitationRecord.recipient,type: 1})
+  if(visitor){
+      visitor.name= invitationRecord.name             // 姓名
+      visitor.tel = invitationRecord.tel              // 联系电话
+      visitor.photo = invitationRecord.photo            // 识别照片
+      visitor.company = invitationRecord.company         // 公司
+      visitor.position = invitationRecord.position         // 职位
+      visitor.certificateNumber = invitationRecord.certificateNumber // 证件号码
+      visitor.updateTime = moment().format('YYYY-MM-DD HH:mm:ss') // 更新时间
+  }
+  // 更新访客信息，并注册人脸
+  let res = await personController.update(visitor)
+  console.log('邀约记录添加到访客信息中', res)
+  return res
+}
+
 // 邀约查询
 exports.findRecords = async (query) => {
   return await agreedRecordService.find(query)
@@ -80,15 +155,15 @@ exports.update = async (body) => {
       doc = await agreedRecordHelper.findOneAndUpdate(filter, body, {new: false})
       if(doc){
         let invitationRecord = await agreedRecordHelper.findOne({_id: doc._id }, 'sponsor receptionist')  // 关联查询修改后的邀约
-        // 最新的查询 照片存在且与上次不同 注册进入人脸库
-        if (invitationRecord.photo && (docOld.photo !== invitationRecord.photo)) {
-          let record = lodash.cloneDeep(invitationRecord)
-          record.type = 3
-          let res = await baidu.add(record)
-          console.log('照片更新注册人脸库结果', res.data.error_msg)
+         // 是否为访客补全信息，是则更新访客信息
+        if(body.completion){
+          console.log('补全信息的更新访客信息开始')
+          let res = await updateVisitorInformation(invitationRecord)
+          console.log('补全信息的更新结果', res)
         }
-        // console.log('更改该后状态', doc.status)
-        if (docOld.status === invitationRecord.status) {
+        // 前后状态一致时 例如为补全 和未到访 时接待人和拜访时间发生改变
+        // if (docOld.status === invitationRecord.status) {
+        if (invitationRecord.status === 0 || invitationRecord.status === 1) {
           // 未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变
           if(doc.agreementDate.time !== body.agreementDate.time){
             console.log('未到访、未补全 两个状态如果时间发生改变 发送短信提示时间发生改变')
@@ -102,34 +177,11 @@ exports.update = async (body) => {
           // 前后状态一致，不再发送消息
           return doc
         }
-        // 未到访 邀约记录添加到访客信息中
-        if(invitationRecord.status === 1){
-          let person ={
-            type: 1,             // 人员类型
-            name: invitationRecord.name,             // 姓名
-            gender: 2,           // 性别
-            tel: invitationRecord.tel,              // 联系电话
-            photo: invitationRecord.photo,            // 识别照片
-            company: invitationRecord.company,          // 公司
-            position: invitationRecord.position,         // 职位
-            remark: invitationRecord.remark,           // 备注
-            // updateTime: moment().format('YYYY-MM-DD '),// 更新时间
-          }
-          if (invitationRecord.certificateNumber) {
-            person.certificateType = 0  // 证件类型
-            person.certificateNumber = invitationRecord.certificateNumber// 证件号码
-          }
-          // 注册人脸 并进入访客信息
-          console.log('邀约记录添加到访客信息中')
-          personController.add(person)
-        }
-
         // 已到访时 给接待人员发送短信
         if(invitationRecord.status === 3){
           console.log('给接待人发送短信')
           notification.visitInform(invitationRecord)
         }
-
         // 已失效时 给访客和接待人发送短信
         if(invitationRecord.status === 4){
           console.log('给接待人发送短信')
@@ -181,28 +233,6 @@ exports.cancleInvite = async (body) => {
     throw err
   }
   return doc
-}
-// 添加邀约记录
-async function addInvitationRecord(body) {
-  let sponsor = await personHelper.findOne({_id: body.sponsor})
-  if ( sponsor && sponsor.tel === body.tel) {
-    throw new Error('无法邀约自己')
-  }
-  let res = await agreedRecordHelper.add(body)
-  // console.log('控制添加邀约记录', res)
-  let invitationRecord = await agreedRecordHelper.findOne({_id:res._id }, 'sponsor receptionist')
-  // console.log('关联查询', invitationRecord)
-  if(invitationRecord){
-    // console.log('发送补全信息')
-    notification.completeInformation(invitationRecord)
-    if(invitationRecord.receptionist){
-       // console.log('接待人通知')
-       notification.reception(invitationRecord)
-    }
-  }else {
-    throw new Error('短信发送失败')
-  }
-  return res
 }
 
 // 添加单条邀约记录

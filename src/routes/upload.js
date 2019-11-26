@@ -20,7 +20,7 @@ router.post('/', async (ctx) => {
   }
 })
 
-router.post('/search', async (ctx) => {
+router.post('/searchEnterInto', async (ctx) => {
   // console.log('抓拍Base64', ctx.request.body)
   ctx.body = await uploadController.openRecord(ctx.request.body.base64)
   // try {
@@ -30,6 +30,12 @@ router.post('/search', async (ctx) => {
   //   ctx.status = 406
   //   ctx.body = e.toString()
   // }
+})
+
+router.post('/searchLeave', async (ctx) => {
+  console.log('离开识别接口')
+  // console.log('抓拍Base64', ctx.request.body)
+  ctx.body = await uploadController.outRecord(ctx.request.body.base64)
 })
 
 module.exports = router

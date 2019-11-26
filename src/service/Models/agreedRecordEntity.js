@@ -39,6 +39,10 @@ const agreedRecordSchema = mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: 'Person'
   },
+  recipient: { // 约定接收人 邀约时的访客
+    type: Schema.Types.ObjectId,
+    ref: 'Person'
+  },
   receptionist: { // 接待人员
     type: Schema.Types.ObjectId,
     ref: 'Person'

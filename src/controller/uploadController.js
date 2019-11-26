@@ -28,8 +28,8 @@ async function visitorRecognition (user){
   let business ={
     personName: user.user_info, // 名字
     type : 3,   // 人员类型 0:员工  3：访客
-    isOK : false, // 是否开门
-    personDeleted: 1  // 人员是否存在 1：存在  0不存在
+    isOK : false, //  是否开门
+     personDeleted: 1  // 人员是否存在 1：存在  0不存在
   }
   let invitationRecord = await agreedRecordHelper.findOne({_id: user.user_id})
   console.log('查找到的邀约记录', invitationRecord)
@@ -107,8 +107,54 @@ async function employeeRecognition (user){
   return business
 }
 
+// 员工离开操作
+async function employeeRecognitionOut (user){
+  let business ={
+    personName: user.user_info, // 名字
+    type : 0,   // 人员类型 0:员工  3：访客
+    isOK : true, // 是否更新成功
+    checkingIn: 1, // 2:已经签退  1：正常签退  0；早退
+    personDeleted: 1  // 人员是否存在 1：存在  0不存在
+  }
+  let employee = await personHelper.findOne({_id:user.user_id})
+  // 员工不存在
+  if(!employee){
+    business.personDeleted = 0
+    return business
+  }
+  // 查询今天是否考勤，没有则开始考勤
+  let date = [
+    moment().hours(0).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'),
+    moment().hours(24).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss')
+  ]
+  let attendanceFilter ={
+    person: user.user_id,
+    createTime: {$gte: date[0], $lt: date[1]},
+  }
+  let attendance = await attendanceHelper.find(attendanceFilter, 'person')
+  console.log('查询考勤记录', attendance)
+  // 不存在则提示今天没有签到
+  if(attendance.length === 0){
+    business.checkingIn = 2
+  }
+  // 存在则走流程开始签离
+  if(attendance.length > 0){
+    // console.log('添加考勤记录')
+    let body = lodash.cloneDeep(attendance[0])
+    body.lastOutTime = moment().format('YYYY-MM-DD HH:mm:ss')
+    body.lastType = await timeBetweenDayFormatWork() ? 0 : 1
+    business.checkingIn = body.firstType //设置签退类型 返回给提示
+    let res = await attendanceHelper.findOneAndUpdate({_id: body._id}, body)
+    console.log('添加考勤记录成功', res)
+    res ? (business.isOK = true) : (business.isOK = false)
+  }
+  console.log('员工写入开门记录')
+  return business
+}
+
 // 人脸匹配度最大计算
 async function cuccessfulCalculation(users){
+  console.log('计算匹配度',users.length)
   let user
   if(users.length > 1){
     user = users.reduce((a, b) => {
@@ -150,7 +196,7 @@ exports.openRecord = async (base64) => {
   }
   let result = await baidu.search(base64)
   let res = result.data
-  // console.log('人脸搜索结果', res)
+  console.log('人脸搜索结果', res)
   if(res.error_code === 0){
     // 选出相似度最高的人
     let user = await cuccessfulCalculation(res.result.user_list)
@@ -173,8 +219,12 @@ exports.openRecord = async (base64) => {
 // 离开记录
 exports.outRecord = async (base64) => {
   let response ={
-    person : {},
-    business: {},
+    business: {
+      personName: '', // 名字
+      type : '',   // 人员类型 0:员工  3：访客
+      isOK : false, // 否修改成功
+      personDeleted: 1  // 人员是否存在 1：存在  0不存在
+    },
     baidu: {}
   }
   let result = await baidu.search(base64)
@@ -183,14 +233,35 @@ exports.outRecord = async (base64) => {
   if(res.error_code === 0){
     // 选出相似度最高的人
     let user = await cuccessfulCalculation(res.result.user_list)
+    console.log('相似度最高', user)
     // 邀约表查询
-    if(user.group_id === 3){
-      // 1、查询该条邀约记录
+    if(user.group_id === '3'){
+      response.business.type = 3
+      response.business.personName = user.user_info
+      // 1、查询该条邀约记录 不存在直接结束
+      let invitationRecord = await agreedRecordHelper.findOne({_id: user.user_id})
+      console.log('查找到的邀约记录', invitationRecord)
+      if(!invitationRecord){
+        response.business.personDeleted = 0
+        return
+      }
       // 2、设置签离时间。修改邀约状态
+      let filter ={
+        _id: invitationRecord._id
+      }
+      let body = lodash.cloneDeep(invitationRecord)
+      body.endTime = moment().format('YYYY-MM-DD HH:mm:ss')
+      body.status = 5
       // 3、更新邀约记录
+      let agreedRecord = await agreedRecordHelper.findOneAndUpdate(filter, body)
+      console.log('更新结果', agreedRecord)
+      agreedRecord ? response.business.isOK = true: response.business.isOK = false
     }
     // 人员表查询
-    if(user.group_id === 0){
+    if(user.group_id === '0'){
+      console.log('人员查询start')
+      response.business = await employeeRecognitionOut(user)
+      console.log('人员查询end')
       // 2：签退  3：早退
       // 1、查询当天考勤记录
       // 2、没有则创建考勤记录

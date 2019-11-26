@@ -8,13 +8,13 @@ exports.find = async (query, populate = '', sort = {'createTime': -1}) => {
 
 exports.findOne = async (filter, populate = '') => {
   let filterCopy = filter
-  filterCopy.deleted = false
-  return await AgreedRecord.findOne(filterCopy).populate(populate)
+  // filterCopy.deleted = false
+  return await attendanceEntity.findOne(filterCopy).populate(populate)
 }
 
 exports.findOneAndUpdate = async (filter, body, options = {new: true}) => {
   // console.log('这是我们的filter', filter)
-  return AgreedRecord.findOneAndUpdate(filter, body, options)
+  return attendanceEntity.findOneAndUpdate(filter, body, options)
 }
 
 exports.add = async (attendance) => {
@@ -24,7 +24,7 @@ exports.add = async (attendance) => {
 
 exports.pageQuery2 = async (filter, pagination = {page: 0, size: 10, sort: '_id'}, populate = '') => {
   // console.log('邀约的关联查询777', populate)
-  const Model = AgreedRecord
+  const Model = attendanceEntity
   pagination.page = parseInt(pagination.page)
   pagination.size = parseInt(pagination.size)
   var start = (pagination.page) * pagination.size

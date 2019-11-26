@@ -170,24 +170,30 @@ exports.findOne = async (filter) => {
 },
 
 exports.add = async (person) => {
+  await verifyPersonFieldDuplicated(person)
+  let resPerson =  await personHelper.add(person)
+  if(resPerson && resPerson.photo){
+    let res = await baidu.add(resPerson)
+    console.log('人脸注册结果', res.data)
+  }
+  return resPerson
   // // 3 判断是否存在同证件号的访客
-  if (person.type === 0) { // 如果添加的人员是在职员工,需要进行访客升级员工判断
-    await verifyPersonFieldDuplicated(person)
-    let resPerson =  await personHelper.add(person)
-    if(resPerson.photo){
-      let res = await baidu.add(resPerson)
-      console.log('人脸注册结果', res.data)
-    }
-    return resPerson
-  } else {
-    await verifyPersonFieldDuplicated(person)
-    let resPerson =  await personHelper.add(person)
-    return resPerson
+  // if (person.type === 0) { // 如果添加的人员是在职员工,需要进行访客升级员工判断
+  //   await verifyPersonFieldDuplicated(person)
+  //   let resPerson =  await personHelper.add(person)
+  //   if(resPerson && resPerson.photo){
+  //     let res = await baidu.add(resPerson)
+  //     console.log('人脸注册结果', res.data)
+  //   }
+  //   return resPerson
+  // } else {
+  //   await verifyPersonFieldDuplicated(person)
+  //   let resPerson =  await personHelper.add(person)
+  //   return resPerson
     // if(resPerson.photo){
     //   let res = await baidu.add(resPerson)
     //   console.log('人脸注册结果', res.data)
     // }
-  }
 }
 
 exports.del =  async (_id) => {
@@ -196,8 +202,15 @@ exports.del =  async (_id) => {
 
 exports.update =  async  (person)  => {
   await update_verifyPersonFieldDuplicated(person)
+  let oldPerson = await personHelper.findOne({_id: person._id})
   let resPerson = await personHelper.updateOne({_id: person._id}, person)
-  if(resPerson.ok && person.photo){
+  console.log('resPerson.ok是什么鬼', resPerson.ok)
+  // 人脸之前不存在，则注册新的人脸
+  if(oldPerson && !oldPerson.photo){
+    let res = await baidu.add(person)
+    console.log('更新操作发现人脸不存在,注册结果', res.data)
+  }
+  if(oldPerson.photo && resPerson.ok && person.photo){
     let res = await baidu.update(person)
     console.log('人脸更新结果', res.data)
   }

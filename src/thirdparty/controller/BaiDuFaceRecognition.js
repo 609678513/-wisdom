@@ -62,13 +62,18 @@ exports.search = async  (base64)  => {
   let options = {
     image: base64, // 必选
     image_type: 'BASE64',// 必选
-    group_id_list: '0,3', // 指定用户组查找，必选
+    group_id_list: '0,1', // 指定用户组查找，必选
     // user_id: 'user2', // 指定用户id 查找 非必选
     // user_info: 'daiym3',// 用户描述 非必选
+    match_threshold: 80, // 匹配度
     liveness_control: 'NORMAL',// 活体检测控制级别
     quality_control: 'LOW' // 图片质量检测级别
   }
+  // options.image = base64 ? base64:''
+  // https://aip.baidubce.com/rest/2.0/face/v3/multi-search
+  console.log('人脸搜索开始')
   return await http.axiosPost(`/rest/2.0/face/v3/search?access_token=`+ access_token, options);
+  // return await http.axiosPost(`/rest/2.0/face/v3/multi-search?access_token=`+ access_token, options);
 
 }
 
@@ -84,7 +89,7 @@ exports.update =  async  (person)  => {
     group_id: person.type, // 指定用户组查找，必选
     user_id: person._id, // 指定用户id 查找 必选
     action_type: 'REPLACE',// 更新方式
-    // user_info: 'daiym3',// 用户描述 非必选
+    user_info: person.name,// 用户描述 非必选
     liveness_control: 'NORMAL',// 活体检测控制级别
     quality_control: 'LOW' // 图片质量检测级别
   }
