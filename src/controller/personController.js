@@ -208,11 +208,12 @@ exports.update =  async  (person)  => {
   // 人脸之前不存在，则注册新的人脸
   if(oldPerson && !oldPerson.photo){
     let res = await baidu.add(person)
-    console.log('更新操作发现人脸不存在,注册结果', res.data)
+    console.log('更新操作发现人脸不存在,百度注册人脸', res.data)
   }
   if(oldPerson.photo && resPerson.ok && person.photo){
+    console.log('更新人信息', person)
     let res = await baidu.update(person)
-    console.log('人脸更新结果', res.data)
+    console.log('更新操作人脸存在,更新人脸啦！！！', res.data)
   }
   return resPerson
 }

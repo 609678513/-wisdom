@@ -8,8 +8,8 @@ var access_token = '';
 
 const param = qs.stringify({
   'grant_type': 'client_credentials',
-  'client_id': 'wtqyGSGWPt7Mxdh67xDW1K1v',
-  'client_secret': 'UbmTRD7RydlcOWLtBgfxvmc2RdFEcF07'
+  'client_id': 'oYbLqVEGWXXaTnXOqmlX51t8',
+  'client_secret': 'IZGwBIes4NRTzprGBARYQkdfCqYO9UFb'
 });
 
 async function getToken () {
