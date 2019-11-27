@@ -53,13 +53,16 @@ exports.cancellation = async (invitationRecord) => {
   visitorMessage.add_var('name', invitationRecord.name);
   visitorMessage.add_var('reason', invitationRecord.closeReason);
 
-  receptionMessage.set_to(invitationRecord.receptionist.tel);
-  receptionMessage.set_project(receptionProject);
-  receptionMessage.add_var('time', invitationRecord.agreementDate.time);
-  receptionMessage.add_var('name', invitationRecord.receptionist.name);
+  if (invitationRecord && invitationRecord.receptionist) {
+    receptionMessage.set_to(invitationRecord.receptionist.tel);
+    receptionMessage.set_project(receptionProject);
+    receptionMessage.add_var('time', invitationRecord.agreementDate.time);
+    receptionMessage.add_var('name', invitationRecord.receptionist.name);
+  }
 
-  visitorMessage.xsend()
-  receptionMessage.xsend()
+
+  // visitorMessage.xsend()
+  // receptionMessage.xsend()
   console.log('取消通知短信结束')
 }
 
@@ -75,15 +78,15 @@ exports.timeChange = async (invitationRecord) => {
   visitorMessage.set_project(visitorProject);
   visitorMessage.add_var('name', invitationRecord.name);
   visitorMessage.add_var('time', invitationRecord.agreementDate.time);
-
-  receptionMessage.set_to(invitationRecord.receptionist.tel);
-  receptionMessage.set_project(receptionProject);
-  receptionMessage.add_var('name', invitationRecord.receptionist.name);
-  receptionMessage.add_var('name1', invitationRecord.name);
-  receptionMessage.add_var('tel', invitationRecord.tel)
-  receptionMessage.add_var('time', invitationRecord.agreementDate.time);
-
-
+  if (invitationRecord && invitationRecord.receptionist) {
+    console.log('接待人发送短信了')
+    receptionMessage.set_to(invitationRecord.receptionist.tel);
+    receptionMessage.set_project(receptionProject);
+    receptionMessage.add_var('name', invitationRecord.receptionist.name);
+    receptionMessage.add_var('name1', invitationRecord.name);
+    receptionMessage.add_var('tel', invitationRecord.tel)
+    receptionMessage.add_var('time', invitationRecord.agreementDate.time);
+  }
   visitorMessage.xsend()
   receptionMessage.xsend()
   console.log('拜访时间改变短信结束')
@@ -91,6 +94,9 @@ exports.timeChange = async (invitationRecord) => {
 
 // 已到访 通知接待人 o7Y6v
 exports.visitInform = async (invitationRecord) => {
+  if(!invitationRecord.receptionist){
+     return
+  }
   console.log('已到访通知短信开始')
   let receptionProject = 'o7Y6v'
   let receptionMessage = new MessageXSend();
