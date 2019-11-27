@@ -151,10 +151,13 @@ async function employeeRecognitionOut (user){
     // console.log('添加考勤记录')
     let body = lodash.cloneDeep(attendance[0])
     body.lastOutTime = moment().format('YYYY-MM-DD HH:mm:ss')
-    body.lastType = await timeBetweenDayFormatWork() ? 0 : 1
-    business.checkingIn = body.firstType //设置签退类型 返回给提示
+    let tag = await timeBetweenDayFormatWork()
+    // console.log('考勤记录？', tag)
+    tag ? body.lastType = 0 : body.lastType = 1
+    // console.log('body', body)
+    business.checkingIn = body.lastType //设置签退类型 返回给提示
     let res = await attendanceHelper.findOneAndUpdate({_id: body._id}, body)
-    console.log('添加考勤记录成功', res)
+    console.log('考勤记录更新成功', res)
     res ? (business.isOK = true) : (business.isOK = false)
   }
   console.log('员工写入开门记录')
@@ -279,7 +282,7 @@ exports.outRecord = async (base64) => {
     if(user.group_id === '1'){
       console.log('访客离开查询start')
       response.business = await visitorRecognitionOut(user)
-      console.log('访客结束查询end', response.business)
+      console.log('访客结束查询end',response.business)
     }
     // 人员表查询
     if(user.group_id === '0'){
