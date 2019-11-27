@@ -21,6 +21,7 @@ const department  = require('./src/routes/department')
 const users = require('./src/routes/users')
 const upload = require('./src/routes/upload')
 const agreedRecord = require('./src/routes/agreedRecord')
+const attendance = require('./src/routes/attendance')
 
  // 1.主页静态网页 把静态页统一放到public中管理
 const home  = serve(path.join(__dirname)+'/public/');
@@ -135,6 +136,7 @@ app.use(person.routes(), person.allowedMethods())
 app.use(department.routes(), department.allowedMethods())
 app.use(users.routes(), users.allowedMethods())
 app.use(agreedRecord.routes(), agreedRecord.allowedMethods())
+app.use(attendance.routes(), attendance.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {

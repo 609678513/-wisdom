@@ -151,6 +151,12 @@ async function update_verifyPersonFieldDuplicated (person) {
   }
 }
 
+
+exports.find = async (params) => {
+  let filter = await personFilterCopyUtil(params)
+  // logger.debug('[人员] [查询]', filter)
+  return await personHelper.find(filter, 'department employeeFactory roles')
+},
 exports.findAll = async (params) => {
   console.log('到达控制层', params)
   let filter = await personFilterCopyUtil(params)
@@ -159,6 +165,7 @@ exports.findAll = async (params) => {
   // logger.debug('[人员] [查询]', filter)
   return await personHelper.find(filter, 'department')
 },
+
 exports.findPageQuery = async (ctx) => {
   console.log( 'agagag',ctx.query.params)
   console.log( 'agagag',ctx.query.page)
