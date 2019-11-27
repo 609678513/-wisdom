@@ -23,27 +23,36 @@ function  timeBetweenDayFormatWork () {
   return (now - start.getTime() > 0) && (end.getTime() - now > 0)
 }
 
-// 访客识别操作
+// 访客到访操作
 async function visitorRecognition (user){
   let business ={
     personName: user.user_info, // 名字
-    type : 3,   // 人员类型 0:员工  3：访客
+    type : 1,   // 人员类型 0:员工  1：访客
     isOK : false, //  是否开门
      personDeleted: 1  // 人员是否存在 1：存在  0不存在
   }
-  let invitationRecord = await agreedRecordHelper.findOne({_id: user.user_id})
-  console.log('查找到的邀约记录', invitationRecord)
-  if(!invitationRecord){
+  let invitationRecord = await agreedRecordHelper.find({recipient: user.user_id})
+  console.log('查找到的邀约记录', invitationRecord.length)
+  if(invitationRecord.length === 0){
     business.personDeleted = 0
     return business
   }
-  business.isOK = await timeBetweenDayFormat(invitationRecord.agreementDate.start, invitationRecord.agreementDate.end)
-  // 写入开门记录
+  let invitation
+  for (let item of invitationRecord){
+    let tag = await timeBetweenDayFormat(item.agreementDate.start, item.agreementDate.end)
+    if(tag){
+      invitation = lodash.cloneDeep(item)
+      break
+    }
+  }
+  console.log('在当前时间段的邀约', invitation)
+  invitation ? business.isOK = true : business.isOK = false
+   // 修改到访状态喝到访时间
   if(business.isOK){
     let filter ={
-      _id: invitationRecord._id
+      _id: invitation._id
     }
-    let body = lodash.cloneDeep(invitationRecord)
+    let body = lodash.cloneDeep(invitation)
     body.arrivalTime = moment().format('YYYY-MM-DD HH:mm:ss')
     body.status = 3
     let res = await agreedRecordHelper.findOneAndUpdate(filter, body)
@@ -59,7 +68,7 @@ async function visitorRecognition (user){
  return business
 }
 
-// 员工识别操作
+// 员工到访操作
 async function employeeRecognition (user){
   let business ={
     personName: user.user_info, // 名字
@@ -152,6 +161,38 @@ async function employeeRecognitionOut (user){
   return business
 }
 
+// 访客离开操作
+async function visitorRecognitionOut (user){
+  let business ={
+    personName: user.user_info, // 名字
+    type : 1,   // 人员类型 0:员工  1：访客
+    isOK : true, // 是否开门
+    personDeleted: 1  // 人员是否存在 1：存在  0不存在
+  }
+  // 1、查询该条邀约记录 不存在直接结束
+  let invitationRecord = await agreedRecordHelper.find({recipient: user.user_id,status: 3})
+  console.log('查找到的邀约记录', invitationRecord)
+  if(invitationRecord.length === 0){
+    business.personDeleted = 0
+    return business
+  }
+// 2、设置签离时间。修改邀约状态,可能一天涉及到很多条邀约
+  for (let item of invitationRecord){
+    let filter ={
+      _id: item._id
+    }
+    let body = lodash.cloneDeep(item)
+    body.endTime = moment().format('YYYY-MM-DD HH:mm:ss')
+    body.status = 5
+    // 3、更新邀约记录
+    let agreedRecord = await agreedRecordHelper.findOneAndUpdate(filter, body)
+    console.log('更新结果', agreedRecord)
+    agreedRecord ? business.isOK = true: business.isOK = false
+  }
+  console.log('访客写入开门记录')
+  return business
+}
+
 // 人脸匹配度最大计算
 async function cuccessfulCalculation(users){
   console.log('计算匹配度',users.length)
@@ -202,7 +243,7 @@ exports.openRecord = async (base64) => {
     let user = await cuccessfulCalculation(res.result.user_list)
     console.log('计算识别结果', user)
     // 邀约表查询
-    if(user.group_id === '3'){
+    if(user.group_id === '1'){
       response.business =  await visitorRecognition(user)
     }
     // 人员表查询
@@ -235,27 +276,10 @@ exports.outRecord = async (base64) => {
     let user = await cuccessfulCalculation(res.result.user_list)
     console.log('相似度最高', user)
     // 邀约表查询
-    if(user.group_id === '3'){
-      response.business.type = 3
-      response.business.personName = user.user_info
-      // 1、查询该条邀约记录 不存在直接结束
-      let invitationRecord = await agreedRecordHelper.findOne({_id: user.user_id})
-      console.log('查找到的邀约记录', invitationRecord)
-      if(!invitationRecord){
-        response.business.personDeleted = 0
-        return
-      }
-      // 2、设置签离时间。修改邀约状态
-      let filter ={
-        _id: invitationRecord._id
-      }
-      let body = lodash.cloneDeep(invitationRecord)
-      body.endTime = moment().format('YYYY-MM-DD HH:mm:ss')
-      body.status = 5
-      // 3、更新邀约记录
-      let agreedRecord = await agreedRecordHelper.findOneAndUpdate(filter, body)
-      console.log('更新结果', agreedRecord)
-      agreedRecord ? response.business.isOK = true: response.business.isOK = false
+    if(user.group_id === '1'){
+      console.log('访客离开查询start')
+      response.business = await visitorRecognitionOut(user)
+      console.log('访客结束查询end', response.business)
     }
     // 人员表查询
     if(user.group_id === '0'){
