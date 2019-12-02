@@ -3,7 +3,7 @@ const agreementCauseList = ['商务','会议','项目','应聘','私人','考察
 
 // 邀约补全信息短信 WYzDy2
 exports.completeInformation = async (invitationRecord) => {
-  console.log('补全信息短信开始')
+  console.log('补全信息短信开始', invitationRecord)
 
   let project = 'WYzDy2'
   let url = 'http://47.103.124.206:8080/#/bq/' + invitationRecord._id
