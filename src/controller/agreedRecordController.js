@@ -93,7 +93,14 @@ exports.findRecords = async (query) => {
 
 // 查询所有邀约记录
 exports.find = async (params) => {
-  // console.log('这里的参数', params)
+  console.log('这里的参数', params)
+  // $and转换json
+  if(params.$and){
+    let and = lodash.cloneDeep(params.$and)
+    params.$and[0] = lodash.cloneDeep(JSON.parse(and[0]))
+    params.$and[1] = lodash.cloneDeep(JSON.parse(and[1]))
+  }
+
   if (params.date) {
     params['agreementDate.start'] = {
       $gte: params.date[0],
@@ -131,7 +138,7 @@ exports.find = async (params) => {
   if (params.page) {
     let page = params.page
     delete params.page
-    // console.log('邀约的关联查询', params, page, populate)
+    console.log('邀约的关联查询', params, page, populate)
     return await agreedRecordHelper.pageQuery2(params, page, populate)
   } else {
     return await agreedRecordHelper.find(params, populate, sort = {'createTime': 1})
