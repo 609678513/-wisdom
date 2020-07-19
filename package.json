@@ -33,7 +33,7 @@
     "koa-views": "^5.2.1",
     "loadsh": "0.0.4",
     "merge-descriptors": "^1.0.1",
-    "mongoose": "^5.5.14",
+    "mongoose": "^5.7.5",
     "node-xlsx": "^0.15.0",
     "object-inspect": "^1.7.0",
     "pug": "^2.0.0-rc.1"
