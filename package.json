@@ -36,7 +36,7 @@
     "mongoose": "^5.5.14",
     "node-xlsx": "^0.15.0",
     "object-inspect": "^1.7.0",
-    "pug": "^2.0.0-rc.1"
+    "pug": "^3.0.1"
   },
   "devDependencies": {
     "nodemon": "^1.8.1"
